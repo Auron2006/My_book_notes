@@ -2,3 +2,4 @@ fastapi
 uvicorn
 jsonrpcserver
 PyMuPDF
+aiofiles          # <— added this
