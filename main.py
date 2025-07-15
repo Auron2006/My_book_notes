@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+import random
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
@@ -26,6 +28,23 @@ app.mount(
     StaticFiles(directory=well_known_dir, html=False),
     name="well-known",
 )
+# --------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+# Simple demo data – replace with real PDF parsing later
+summaries = [
+    "Atomic Habits – small habits compound into massive change.",
+    "Deep Work – focused work is the new super‑power.",
+    "Man’s Search for Meaning – freedom lies in choosing your attitude.",
+]
+
+@app.get("/random_summary", tags=["mcp"])
+def get_random_summary():
+    """
+    Return one random book‑note snippet.
+    This endpoint powers the `get_random_summary` action in the MCP manifest.
+    """
+    return JSONResponse({"summary": random.choice(summaries)})
 # --------------------------------------------------------------------------
 
 @app.get("/")
