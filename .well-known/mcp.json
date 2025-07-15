@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "tools": [
+    {
+      "name": "get_random_book_fact",
+      "description": "Returns one random quote or idea from Gerome’s book summaries.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ]
+}
