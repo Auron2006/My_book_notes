@@ -1,13 +1,37 @@
 {
-  "schema_version": "1.0",
-  "tools": [
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Random Book Notes MCP",
+    "version": "1.0.0"
+  },
+  "servers": [
     {
-      "name": "get_random_book_fact",
-      "description": "Returns one random quote or idea from Gerome’s book summaries.",
-      "input_schema": {
-        "type": "object",
-        "properties": {}
+      "url": "https://my-book-notes-mcp.onrender.com"
+    }
+  ],
+  "paths": {
+    "/random_summary": {
+      "get": {
+        "operationId": "get_random_summary",
+        "summary": "Get a random book summary",
+        "responses": {
+          "200": {
+            "description": "A random summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "summary": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
-  ]
+  }
 }
