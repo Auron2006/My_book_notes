@@ -1,21 +1,34 @@
-import random
-import fitz  # PyMuPDF
-from fastapi import FastAPI, Request
-from jsonrpcserver import method, async_dispatch
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 app = FastAPI()
 
-# Load and split PDF content
-with fitz.open("book_summaries_for_mcp.pdf") as doc:
-    all_text = "\n".join([page.get_text() for page in doc])
-    chunks = [p.strip() for p in all_text.split("\n\n") if len(p.strip()) > 40]
+# CORS (keeps your old behaviour)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@method
-async def get_random_book_fact() -> str:
-    return random.choice(chunks)
+# --- NEW: serve .well-known for MCP manifest ------------------------------
+well_known_dir = ".well-known"
+if not os.path.isdir(well_known_dir):
+    raise RuntimeError(
+        "'.well-known' folder not found at project root – "
+        "make sure it exists and contains mcp.json"
+    )
 
-@app.post("/")
-async def rpc_handler(request: Request):
-    request_text = await request.body()
-    response = await async_dispatch(request_text.decode())
-    return response
+app.mount(
+    "/.well-known",
+    StaticFiles(directory=well_known_dir, html=False),
+    name="well-known",
+)
+# --------------------------------------------------------------------------
+
+@app.get("/")
+def root():
+    """Simple health-check endpoint"""
+    return {"status": "ok", "message": "MCP server is running"}
