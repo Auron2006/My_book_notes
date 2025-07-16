@@ -4,6 +4,12 @@ from fastapi.staticfiles import StaticFiles
 import os
 import random
 from fastapi.responses import JSONResponse
+from pdf_parser import BookSummaryParser
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 

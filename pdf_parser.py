@@ -37,38 +37,84 @@ class BookSummaryParser:
         """Extract individual book summaries from the text."""
         summaries = []
         
-        # Split by common patterns that indicate new book sections
-        # Looking for patterns like "1.1", "2.1", etc. followed by book titles
-        book_pattern = r'\d+\.\d+\s+([^\.]+by[^\.]+)'
+        # Split into lines for easier processing
+        lines = text.split('\n')
         
-        # Find all book titles
-        book_matches = re.finditer(book_pattern, text, re.IGNORECASE)
-        book_positions = []
-        
-        for match in book_matches:
-            title = match.group(1).strip()
-            start_pos = match.start()
-            book_positions.append((title, start_pos))
-        
-        # Extract content for each book
-        for i, (title, start_pos) in enumerate(book_positions):
-            # Find the end position (start of next book or end of text)
-            if i < len(book_positions) - 1:
-                end_pos = book_positions[i + 1][1]
+        # Look for book titles - they typically follow a pattern like:
+        # "Book Title by Author" or just appear after section numbers
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # Check if this line contains "by" (indicating a book title)
+            # But skip lines that are just numbered points
+            if ' by ' in line.lower() and len(line) > 20 and not re.match(r'^\d+[\.)]\s*', line):
+                # Extract the book title and author
+                title_line = line
+                
+                # Look for the first few points/lessons after the title
+                points = []
+                j = i + 1
+                point_count = 0
+                
+                while j < len(lines) and point_count < 3:
+                    point_line = lines[j].strip()
+                    # Look for numbered points like "1.)", "2.)", etc.
+                    if re.match(r'\d+[\.)]\s*.+', point_line) and len(point_line) > 10:
+                        # Clean up the point
+                        point_text = re.sub(r'^\d+[\.)]\s*', '', point_line)
+                        # Handle multi-line points
+                        if j + 1 < len(lines) and not re.match(r'\d+[\.)]\s*.+', lines[j + 1]):
+                            next_line = lines[j + 1].strip()
+                            if next_line and not ' by ' in next_line.lower():
+                                point_text += ' ' + next_line
+                                j += 1
+                        points.append(point_text.strip())
+                        point_count += 1
+                    j += 1
+                
+                # Format the summary
+                if points:
+                    # Extract book name from title
+                    book_match = re.search(r'(.+?)\s+by\s+(.+)', title_line, re.IGNORECASE)
+                    if book_match:
+                        book_name = book_match.group(1).strip()
+                        author = book_match.group(2).strip()
+                        # Remove any leading numbers or special characters
+                        book_name = re.sub(r'^[\d\.\s\u200b]+', '', book_name)
+                        
+                        # Create summary with first point or two
+                        summary_text = points[0]
+                        if len(summary_text) < 100 and len(points) > 1:
+                            summary_text += '. ' + points[1]
+                        
+                        # Truncate if too long
+                        if len(summary_text) > 150:
+                            summary_text = summary_text[:150] + '...'
+                        
+                        summary = f"{book_name} – {summary_text}"
+                        summaries.append(summary)
+                
+                # Skip past this book section
+                i = j
             else:
-                end_pos = len(text)
-            
-            # Extract the book section
-            book_content = text[start_pos:end_pos].strip()
-            
-            # Clean up and format the summary
-            summary = self._format_summary(title, book_content)
-            if summary:
-                summaries.append(summary)
+                i += 1
         
-        # If no structured summaries found, fall back to paragraph extraction
-        if not summaries:
-            summaries = self._extract_paragraph_summaries(text)
+        # Also look for other book patterns (like "The Subtle Art..." which appears later)
+        additional_patterns = [
+            r'The\s+Subtle\s+Art[^:]+:(.+?)(?=\n\n|\n[A-Z])',
+            r'Sapiens[^:]*:(.+?)(?=\n\n|\n[A-Z])',
+            r'Atomic\s+Habits[^:]*:(.+?)(?=\n\n|\n[A-Z])'
+        ]
+        
+        for pattern in additional_patterns:
+            matches = re.finditer(pattern, text, re.IGNORECASE | re.DOTALL)
+            for match in matches:
+                book_title = match.group(0).split(':')[0].strip()
+                content = match.group(1).strip()[:150] + '...'
+                summary = f"{book_title} – {content}"
+                if summary not in summaries:
+                    summaries.append(summary)
         
         return summaries
     
